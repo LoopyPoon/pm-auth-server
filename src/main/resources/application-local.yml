@@ -1,0 +1,26 @@
+server:
+  port: 8081
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/authdb
+    username: iholin
+    password: 3sotnibaksov
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+logging:
+  level:
+    org.springframework.security: info
+
+app:
+  security:
+    issuer: http://localhost:8081
+  keys:
+    jks:
+      location: classpath:keystore/pm-auth.jks
+      password: changeit
+      alias: pm-auth

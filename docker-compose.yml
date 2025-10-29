@@ -1,0 +1,16 @@
+services:
+  pm-auth-server:
+    build: .
+    image: pm-auth-server:local
+    container_name: pm-auth-server
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - pm-net
+    restart: unless-stopped
+
+networks:
+  pm-net:
+    external: true
