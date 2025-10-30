@@ -18,4 +18,4 @@ logging:
 
 app:
   security:
-    issuer: http://localhost:8081
+    issuer: http://pm-auth-server:8081
