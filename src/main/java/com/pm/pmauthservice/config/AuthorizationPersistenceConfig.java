@@ -37,7 +37,6 @@ public class AuthorizationPersistenceConfig {
     @Bean
     public OAuth2AuthorizationConsentService authorizationConsentService(JdbcTemplate jdbcTemplate,
                                                                          RegisteredClientRepository registeredClientRepository) {
-        // Новая сигнатура: 2 аргумента
         return new JdbcOAuth2AuthorizationConsentService(jdbcTemplate, registeredClientRepository);
     }
 
@@ -49,8 +48,8 @@ public class AuthorizationPersistenceConfig {
 
             var tokenSettings = TokenSettings.builder()
                     .accessTokenTimeToLive(Duration.ofMinutes(15))
-                    .refreshTokenTimeToLive(Duration.ofDays(7))
-                    .reuseRefreshTokens(true)
+                    .refreshTokenTimeToLive(Duration.ofDays(30))
+                    .reuseRefreshTokens(false) // включаем ротацию refresh токенов
                     .build();
 
             var clientSettings = ClientSettings.builder()
@@ -71,6 +70,7 @@ public class AuthorizationPersistenceConfig {
                     .scope(OidcScopes.PROFILE)
                     .scope("catalog.read")
                     .scope("catalog.write")
+                    .scope("offline_access") // чтобы получать refresh_token
                     .tokenSettings(tokenSettings)
                     .clientSettings(clientSettings)
                     .build();
