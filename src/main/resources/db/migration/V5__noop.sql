@@ -1,0 +1,2 @@
+-- No-op migration to align a schema version with a database (was previously at 5).
+-- Keeps Flyway from warning "schema version (5) newer than latest available (4)".

@@ -14,8 +14,8 @@ spring:
 
 logging:
   level:
-    org.springframework.security: debug
-    org.springframework.security.oauth2.server.authorization: debug
+    org.springframework.security: info
+    org.springframework.security.oauth2.server.authorization: info
 
 app:
   security:
@@ -23,5 +23,5 @@ app:
   keys:
     jks:
       location: classpath:keystore/pm-auth.jks
-      password: changeit
+      password: 3sotnibaksov
       alias: pm-auth

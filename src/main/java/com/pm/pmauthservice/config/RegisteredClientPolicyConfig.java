@@ -3,6 +3,7 @@ package com.pm.pmauthservice.config;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
@@ -15,50 +16,51 @@ import java.time.Duration;
 public class RegisteredClientPolicyConfig {
 
     @Bean
+    @DependsOn("seedSpaClient") // сначала сидер, потом политика
     CommandLineRunner enforceRegisteredClientPolicy(RegisteredClientRepository repo) {
         return args -> {
             var rc = repo.findByClientId("pm-spa");
-            if (rc == null) return;
+            if (rc == null) {
+                System.out.println("[policy] pm-spa not found (unexpected)");
+                return;
+            }
 
-            boolean needSave = false;
-            var builder = RegisteredClient.from(rc);
+            System.out.println("[policy] BEFORE: grants=" + rc.getAuthorizationGrantTypes()
+                    + ", scopes=" + rc.getScopes()
+                    + ", AT_TTL=" + rc.getTokenSettings().getAccessTokenTimeToLive()
+                    + ", RT_TTL=" + rc.getTokenSettings().getRefreshTokenTimeToLive()
+                    + ", reuseRT=" + rc.getTokenSettings().isReuseRefreshTokens());
 
-            // Политика токенов: короткий access, длинный refresh, ротация refresh токенов
             var desiredToken = TokenSettings.builder()
                     .accessTokenTimeToLive(Duration.ofMinutes(15))
                     .refreshTokenTimeToLive(Duration.ofDays(30))
                     .reuseRefreshTokens(false)
                     .build();
-            if (!rc.getTokenSettings().equals(desiredToken)) {
-                builder.tokenSettings(desiredToken);
-                needSave = true;
-            }
 
-            // Клиентские настройки — PKCE и consent оставляем включёнными
             var desiredClient = ClientSettings.builder()
                     .requireProofKey(true)
                     .requireAuthorizationConsent(true)
                     .build();
-            if (!rc.getClientSettings().equals(desiredClient)) {
-                builder.clientSettings(desiredClient);
-                needSave = true;
-            }
 
-            // Гарантируем наличие refresh_token гранта
+            var builder = RegisteredClient.from(rc)
+                    .tokenSettings(desiredToken)
+                    .clientSettings(desiredClient);
+
             if (rc.getAuthorizationGrantTypes().stream().noneMatch(AuthorizationGrantType.REFRESH_TOKEN::equals)) {
                 builder.authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN);
-                needSave = true;
             }
-
-            // Гарантируем наличие offline_access (для выдачи refresh_token в Postman/SPA)
             if (!rc.getScopes().contains("offline_access")) {
                 builder.scope("offline_access");
-                needSave = true;
             }
 
-            if (needSave) {
-                repo.save(builder.build()); // Сохранение пройдёт через репозиторий и сериализует JSON корректно
-            }
+            repo.save(builder.build());
+
+            var after = repo.findByClientId("pm-spa");
+            System.out.println("[policy] AFTER: grants=" + after.getAuthorizationGrantTypes()
+                    + ", scopes=" + after.getScopes()
+                    + ", AT_TTL=" + after.getTokenSettings().getAccessTokenTimeToLive()
+                    + ", RT_TTL=" + after.getTokenSettings().getRefreshTokenTimeToLive()
+                    + ", reuseRT=" + after.getTokenSettings().isReuseRefreshTokens());
         };
     }
 }
