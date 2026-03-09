@@ -35,7 +35,7 @@ public class JwkKeyConfig {
 
         RSAKey rsaKey = new RSAKey.Builder(publicKey)
                 .privateKey(keyPair.getPrivate())
-                .keyID(keyAlias) // kid = pm-auth
+                .keyID(keyAlias)
                 .build();
 
         return new ImmutableJWKSet<>(new JWKSet(rsaKey));

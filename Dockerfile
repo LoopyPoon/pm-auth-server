@@ -1,10 +1,10 @@
-# Build stage
+# Build
 FROM gradle:8.10.2-jdk21 AS build
 WORKDIR /workspace
 COPY . .
-RUN --mount=type=cache,target=/home/gradle/.gradle gradle clean bootJar -x test
+RUN gradle clean bootJar -x test --no-daemon
 
-# Runtime stage
+# Run
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /workspace/build/libs/*.jar /app/app.jar

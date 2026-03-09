@@ -16,7 +16,7 @@ import java.time.Duration;
 public class RegisteredClientPolicyConfig {
 
     @Bean
-    @DependsOn("seedSpaClient") // сначала сидер, потом политика
+    @DependsOn("seedSpaClient")
     CommandLineRunner enforceRegisteredClientPolicy(RegisteredClientRepository repo) {
         return args -> {
             var rc = repo.findByClientId("pm-spa");

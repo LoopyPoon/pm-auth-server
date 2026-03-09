@@ -1,20 +1,16 @@
-server:
-  port: 8081
-
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5433/authdb
     username: iholin
     password: 3sotnibaksov
   jpa:
-    hibernate:
-      ddl-auto: validate
-  flyway:
-    enabled: true
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
 
 logging:
   level:
-    org.springframework.security: info
     org.springframework.security.oauth2.server.authorization: info
 
 app:

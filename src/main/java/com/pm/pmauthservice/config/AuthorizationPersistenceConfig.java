@@ -43,7 +43,6 @@ public class AuthorizationPersistenceConfig {
         return new JdbcOAuth2AuthorizationConsentService(jdbcTemplate, registeredClientRepository);
     }
 
-    // Сидинг public SPA-клиента (PKCE) если его нет в БД
     @Bean
     public CommandLineRunner seedSpaClient(RegisteredClientRepository clients) {
         return args -> {
@@ -68,7 +67,9 @@ public class AuthorizationPersistenceConfig {
                     .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                     .redirectUri("https://oauth.pstmn.io/v1/callback")
                     .redirectUri("http://localhost:5173/callback")
+                    .redirectUri("http://localhost/callback")
                     .postLogoutRedirectUri("http://localhost:5173/")
+                    .postLogoutRedirectUri("http://localhost/")
                     .scope(OidcScopes.OPENID)
                     .scope(OidcScopes.PROFILE)
                     .scope("catalog.read")
@@ -83,7 +84,6 @@ public class AuthorizationPersistenceConfig {
         };
     }
 
-    // Конфиденциальный клиент Only for local: удобно тестировать в Postman (Basic или Body)
     @Bean
     @Profile("local")
     public CommandLineRunner seedPostmanClient(RegisteredClientRepository clients) {
@@ -106,7 +106,6 @@ public class AuthorizationPersistenceConfig {
                     .clientId("pm-postman")
                     .clientSecret(enc.encode("postman-secret"))
                     .clientName("PoorMusic Postman (Confidential, local)")
-                    // Разрешаем оба способа аутентификации, чтобы не упираться в метод
                     .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                     .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
                     .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
@@ -127,42 +126,40 @@ public class AuthorizationPersistenceConfig {
 
     @Bean
     @Profile("local")
-    public CommandLineRunner seedMvcClient(RegisteredClientRepository clients) {
+    public CommandLineRunner seedBffClient(RegisteredClientRepository clients) {
         return args -> {
-            if (clients.findByClientId("pm-mvc") != null) return;
+            if (clients.findByClientId("pm-bff") != null) return;
 
-            PasswordEncoder enc = PasswordEncoderFactories.createDelegatingPasswordEncoder();
-            var tokenSettings = TokenSettings.builder()
-                    .accessTokenTimeToLive(Duration.ofMinutes(15))
-                    .refreshTokenTimeToLive(Duration.ofDays(30))
+            var enc = org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder();
+            var token = org.springframework.security.oauth2.server.authorization.settings.TokenSettings.builder()
+                    .accessTokenTimeToLive(java.time.Duration.ofMinutes(15))
+                    .refreshTokenTimeToLive(java.time.Duration.ofDays(30))
                     .reuseRefreshTokens(false)
                     .build();
 
-            var clientSettings = ClientSettings.builder()
-                    .requireAuthorizationConsent(true)
-                    .requireProofKey(false)
-                    .build();
-
-            RegisteredClient mvcClient = RegisteredClient.withId(UUID.randomUUID().toString())
-                    .clientId("pm-mvc")
-                    .clientSecret(enc.encode("mvc-secret"))
-                    .clientName("PoorMusic MVC (Local)")
-                    .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                    .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
-                    .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                    .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                    .redirectUri("http://localhost:8080/login/oauth2/code/pm-mvc")
-                    .postLogoutRedirectUri("http://localhost:8080/")
-                    .scope(OidcScopes.OPENID)
-                    .scope(OidcScopes.PROFILE)
-                    .scope("catalog.read")
+            var client = org.springframework.security.oauth2.server.authorization.client.RegisteredClient.withId(java.util.UUID.randomUUID().toString())
+                    .clientId("pm-bff")
+                    .clientSecret(enc.encode("bff-secret"))
+                    .clientName("PoorMusic BFF (Local)")
+                    .clientAuthenticationMethod(org.springframework.security.oauth2.core.ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                    .clientAuthenticationMethod(org.springframework.security.oauth2.core.ClientAuthenticationMethod.CLIENT_SECRET_POST)
+                    .authorizationGrantType(org.springframework.security.oauth2.core.AuthorizationGrantType.AUTHORIZATION_CODE)
+                    .authorizationGrantType(org.springframework.security.oauth2.core.AuthorizationGrantType.REFRESH_TOKEN)
+                    .redirectUri("http://localhost:8080/login/oauth2/code/pm-bff")
+                    .scope(org.springframework.security.oauth2.core.oidc.OidcScopes.OPENID)
+                    .scope(org.springframework.security.oauth2.core.oidc.OidcScopes.PROFILE)
                     .scope("offline_access")
-                    .tokenSettings(tokenSettings)
-                    .clientSettings(clientSettings)
+                    .scope("catalog.read")
+                    .tokenSettings(token)
+                    .clientSettings(org.springframework.security.oauth2.server.authorization.settings.ClientSettings.builder()
+                            .requireAuthorizationConsent(true)
+                            .requireProofKey(false)
+                            .build())
                     .build();
 
-            clients.save(mvcClient);
-            System.out.println("[seedMvcClient] created pm-mvc with RT TTL=30d, reuse=false, basic+post auth");
+            clients.save(client);
+            System.out.println("[seedBffClient] created pm-bff (redirect http://localhost:8080/login/oauth2/code/pm-bff)");
         };
     }
+
 }
